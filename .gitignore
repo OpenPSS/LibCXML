@@ -1,0 +1,6 @@
+*.user
+*.obj
+*.o
+*.lib
+*.a
+build/*
