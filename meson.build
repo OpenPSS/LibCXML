@@ -13,5 +13,3 @@ libCXML = static_library('CXML',
         'CXMLReader.cpp',
         'CXMLStream.cpp',
         install : true)
-		
-libCXML_dep = declare_dependency(link_with: libCXML)
