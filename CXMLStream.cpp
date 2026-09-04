@@ -2,22 +2,36 @@
 #include "CXMLStream.hpp"
 #include <cstring>
 #include <string>
+#include <fstream>
 
 namespace LibCXML {
-	CXMLStream::CXMLStream(char* srcbuffer, size_t length) {
-
-		this->buffer = new char[length];
-		memcpy(this->buffer, srcbuffer, length);
-		this->length = length;
-		this->pos = 0;
+	CXMLStream::CXMLStream(uint8_t* srcbuffer, size_t size) {
+		this->Open(srcbuffer, size);
+	}
+	CXMLStream::CXMLStream(std::fstream& fd, CxmlTableDeclaration dec)
+	{
+		this->Open(fd, dec.tableOffset, dec.tableSize);
+	}
+	CXMLStream::CXMLStream(std::fstream& fd, size_t offset, size_t size)
+	{
+		this->Open(fd, offset, size);
 	}
 
-	CXMLStream::~CXMLStream() {
-		delete[] this->buffer;
+	void CXMLStream::Open(uint8_t* srcbuffer, size_t size)
+	{
+		this->buffer.resize(size);
+		memcpy(this->buffer.data(), srcbuffer, size);
+	}
+
+	void CXMLStream::Open(std::fstream& fd, size_t offset, size_t size)
+	{
+		fd.seekg(offset);
+		this->buffer.resize(size);
+		fd.read((char*)this->buffer.data(), this->buffer.size());
 	}
 
 	size_t CXMLStream::Length() {
-		return this->length;
+		return this->buffer.size();
 	}
 
 	void CXMLStream::Seek(size_t pos) {
@@ -25,25 +39,25 @@ namespace LibCXML {
 	}
 
 	char* CXMLStream::ReadStrLen(size_t sz) {
-		char* str = this->buffer + this->pos;
+		char* str = (char*)(this->buffer.data() + this->pos);
 		pos += sz * sizeof(char);
 		return str;
 	}
 
 	wchar_t* CXMLStream::ReadWStrLen(size_t sz) {
-		wchar_t* str = (wchar_t*)(this->buffer + this->pos);
+		wchar_t* str = (wchar_t*)(this->buffer.data() + this->pos);
 		pos += sz * sizeof(wchar_t);
 		return str;
 	}
 
 	char* CXMLStream::ReadStr() {
-		char* str = this->buffer + this->pos;
+		char* str = (char*)(this->buffer.data() + this->pos);
 		pos += (strlen(str)) * (sizeof(char)) + 1;
 		return str;
 	}
 
 	wchar_t* CXMLStream::ReadWStr() {
-		wchar_t* str = (wchar_t*)(this->buffer + this->pos);
+		wchar_t* str = (wchar_t*)(this->buffer.data() + this->pos);
 		pos += (wcslen(str)) * (sizeof(wchar_t)) + 1;
 		return str;
 	}
@@ -68,10 +82,10 @@ namespace LibCXML {
 
 	size_t CXMLStream::Read(void* buf, size_t sz) {
 		size_t realsz = sz;
-		if ((this->pos + realsz) > this->length)
-			realsz = (this->length - this->pos);
+		if ((this->pos + realsz) > this->buffer.size())
+			realsz = (this->buffer.size() - this->pos);
 
-		memcpy(buf, this->buffer + this->pos, realsz);
+		memcpy(buf, this->buffer.data() + this->pos, realsz);
 
 		this->pos += realsz;
 

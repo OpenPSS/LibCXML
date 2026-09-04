@@ -6,7 +6,7 @@
 namespace LibCXML {
 
 	CXMLElement::CXMLElement(const std::string& cxmlFile, const std::string& magic) {
-		this->reader = new CXMLReader(cxmlFile, magic.c_str());
+		this->reader = std::make_unique<CXMLReader>(cxmlFile, magic.c_str());
 		this->reader->TreeTable->Seek(0);
 		this->attributes = std::vector<CXMLAttributeBase*>();
 		readCurrentElement();
@@ -19,9 +19,9 @@ namespace LibCXML {
 		reader->StringTable->Seek(attributeHeader.name);
 		std::string attributeName = std::string(reader->StringTable->ReadStr());
 
-		std::vector<float>* floatArr;
-		std::vector<int>* intArr;
-		char* filebuffer;
+		std::vector<float> floatArr;
+		std::vector<int> intArr;
+		std::vector<uint8_t> buffer;
 		int ref;
 
 		switch (attributeHeader.type) {
@@ -45,24 +45,25 @@ namespace LibCXML {
 			break;
 		case TYPE_INTEGER_ARRAY:
 			reader->IntArrayTable->Seek(attributeHeader.value * sizeof(int));
-			intArr = new std::vector<int>();
+			intArr.resize(0);
+			intArr.reserve(attributeHeader.sz);
 			for (uint32_t i = 0; i < attributeHeader.sz; i++)
-				intArr->push_back(reader->IntArrayTable->ReadInt());
-			this->attributes.push_back(new CXMLAttribute<std::vector<int>*>(attributeName, intArr));
+				intArr.push_back(reader->IntArrayTable->ReadInt());
+			this->attributes.push_back(new CXMLAttribute<std::vector<int>>(attributeName, intArr));
 			break;
 		case TYPE_FLOAT_ARRAY:
 			reader->FloatArrayTable->Seek(attributeHeader.value * sizeof(float));
-			floatArr = new std::vector<float>();
+			floatArr.resize(0);
+			floatArr.reserve(attributeHeader.sz);
 			for (uint32_t i = 0; i < attributeHeader.sz; i++)
-				floatArr->push_back(reader->FloatArrayTable->ReadFloat());
-			this->attributes.push_back(new CXMLAttribute<std::vector<float>*>(attributeName, floatArr));
+				floatArr.push_back(reader->FloatArrayTable->ReadFloat());
+			this->attributes.push_back(new CXMLAttribute<std::vector<float>>(attributeName, floatArr));
 			break;
 		case TYPE_FILE:				
 			reader->FileTable->Seek(attributeHeader.value);
-			filebuffer = new char[attributeHeader.sz];
-			reader->FileTable->Read(filebuffer, attributeHeader.sz);
-			this->attributes.push_back(new CXMLAttribute<CXMLStream*>(attributeName, new CXMLStream(filebuffer, attributeHeader.sz)));
-			delete[] filebuffer;
+			buffer.resize(attributeHeader.sz);
+			reader->FileTable->Read(buffer.data(), attributeHeader.sz);
+			this->attributes.push_back(new CXMLAttribute<CXMLStream>(attributeName, buffer.data(), attributeHeader.sz));
 			break;
 		case TYPE_ID_REF:
 			reader->IdTable->Seek(attributeHeader.value);
@@ -96,6 +97,7 @@ namespace LibCXML {
 		for (CXMLAttributeBase* attributeBase : this->attributes) {
 			delete attributeBase;
 		}
+
 		this->attributes.clear();
 
 		if (this->curElemPtr.numAttributes != -1) {
@@ -161,8 +163,6 @@ namespace LibCXML {
 			delete attributeBase;
 		}
 		this->attributes.clear();
-
-		delete reader;
 	}
 
 	bool CXMLElement::HasParentElement() {
