@@ -1,3 +1,4 @@
+#include "CXMLStream.hpp"
 #include "CXMLFile.hpp"
 #include "CXMLStream.hpp"
 #include <cstring>
@@ -36,6 +37,11 @@ namespace LibCXML {
 
 	void CXMLStream::Seek(size_t pos) {
 		this->pos = pos;
+	}
+
+	bool CXMLStream::Empty()
+	{
+		return this->buffer.empty();
 	}
 
 	char* CXMLStream::ReadStrLen(size_t sz) {
