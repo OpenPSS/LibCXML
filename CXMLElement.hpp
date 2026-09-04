@@ -3,6 +3,7 @@
 #include "CXMLFile.hpp"
 #include "CXMLReader.hpp"
 #include "CXMLAttributeBase.hpp"
+#include "CXMLAttribute.hpp"
 #include <memory>
 #include <vector>
 
@@ -22,10 +23,10 @@ namespace LibCXML {
 		CXMLElement(const std::string& cxmlFile, const std::string& magic);
 		~CXMLElement();
 		std::string ElementName();
-		template <typename T> T GetAttribute(const std::string& attributeName) {
+		template <typename T> CXMLAttribute<T>* GetAttribute(const std::string& attributeName) {
 			for (CXMLAttributeBase* attribute : this->attributes) {
 				if (attribute->AttributeName() == attributeName) {
-					return (T)attribute;
+					return static_cast<CXMLAttribute<T>*>(attribute);
 				}
 			}
 			return NULL;
