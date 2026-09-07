@@ -7,6 +7,16 @@ cpp = meson.get_compiler('cpp')
 dirbase = meson.current_source_dir()
 include_libs = include_directories('.')
 
+
+
+cargs = []
+largs = []
+if target_machine.system() == 'darwin'
+    cargs += ['-arch', 'arm64', '-arch', 'x86_64']
+    largs += ['-arch', 'arm64', '-arch', 'x86_64']
+endif
+
+
 libCXML = static_library('CXML',
         'CXMLAttribute.cpp',
         'CXMLAttributeBase.cpp',
@@ -14,6 +24,8 @@ libCXML = static_library('CXML',
         'CXMLReader.cpp',
         'CXMLStream.cpp',
 		include_directories: [ include_libs ],
-        install : true)
+        cpp_args: cargs,
+		link_args: largs
+)
 		
 libCXML_dep = declare_dependency(include_directories: include_libs, link_with: libCXML)
